@@ -1,6 +1,6 @@
 import { ABORT_REASON, AI_SENDER } from "@/constants";
 import { logError, logInfo } from "@/logger";
-import { ChatMessage } from "@/sharedState";
+import { ChatMessage } from "@/types/message";
 import { err2String, formatDateTime } from "@/utils";
 import { Notice } from "obsidian";
 import ChainManager from "../chainManager";

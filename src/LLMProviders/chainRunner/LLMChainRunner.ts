@@ -1,7 +1,7 @@
 import { ABORT_REASON } from "@/constants";
 import { logInfo } from "@/logger";
 import { getSystemPrompt } from "@/settings/model";
-import { ChatMessage } from "@/sharedState";
+import { ChatMessage } from "@/types/message";
 import { extractChatHistory, getMessageRole, withSuppressedTokenWarnings } from "@/utils";
 import { BaseChainRunner } from "./BaseChainRunner";
 import { ThinkBlockStreamer } from "./utils/ThinkBlockStreamer";

@@ -2,7 +2,7 @@ import { ABORT_REASON, EMPTY_INDEX_ERROR_MESSAGE } from "@/constants";
 import { logInfo } from "@/logger";
 import { HybridRetriever } from "@/search/hybridRetriever";
 import { getSettings, getSystemPrompt } from "@/settings/model";
-import { ChatMessage } from "@/sharedState";
+import { ChatMessage } from "@/types/message";
 import {
   extractChatHistory,
   extractUniqueTitlesFromDocs,

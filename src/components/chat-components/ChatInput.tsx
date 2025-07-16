@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { COPILOT_TOOL_NAMES } from "@/LLMProviders/intentAnalyzer";
 import { Mention } from "@/mentions/Mention";
 import { getModelKeyFromModel, useSettingsValue } from "@/settings/model";
-import { SelectedTextContext } from "@/sharedState";
+import { SelectedTextContext } from "@/types/message";
 import { getToolDescription } from "@/tools/toolManager";
 import {
   checkModelApiKey,

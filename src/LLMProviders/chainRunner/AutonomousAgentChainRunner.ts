@@ -1,6 +1,6 @@
 import { logError, logInfo, logWarn } from "@/logger";
 import { getSystemPrompt } from "@/settings/model";
-import { ChatMessage } from "@/sharedState";
+import { ChatMessage } from "@/types/message";
 import { createGetFileTreeTool } from "@/tools/FileTreeTools";
 import { indexTool, localSearchTool, webSearchTool } from "@/tools/SearchTools";
 import {
