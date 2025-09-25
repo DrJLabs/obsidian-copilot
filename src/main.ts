@@ -43,6 +43,8 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { IntentAnalyzer } from "./LLMProviders/intentAnalyzer";
+import { ChatHistoryItem } from "@/components/chat-components/ChatHistoryPopover";
+import { extractChatTitle, extractChatDate } from "@/utils/chatHistoryUtils";
 
 // Removed unused FileTrackingState interface
 
@@ -334,7 +336,7 @@ export default class CopilotPlugin extends Plugin {
       return [];
     }
 
-    const files = await this.app.vault.getMarkdownFiles();
+    const files = this.app.vault.getMarkdownFiles();
     const folderFiles = files.filter((file) => file.path.startsWith(folder.path));
 
     // Get current project ID if in a project
@@ -353,6 +355,15 @@ export default class CopilotPlugin extends Plugin {
         return !file.basename.match(/^[a-zA-Z0-9-]+__/);
       });
     }
+  }
+
+  async getChatHistoryItems(): Promise<ChatHistoryItem[]> {
+    const files = await this.getChatHistoryFiles();
+    return files.map((file) => ({
+      id: file.path,
+      title: extractChatTitle(file),
+      createdAt: extractChatDate(file),
+    }));
   }
 
   async loadChatHistory(file: TFile) {
@@ -377,6 +388,66 @@ export default class CopilotPlugin extends Plugin {
       ?.view as CopilotView;
     if (copilotView) {
       copilotView.updateView();
+    }
+  }
+
+  async loadChatById(fileId: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(fileId);
+    if (file instanceof TFile) {
+      await this.loadChatHistory(file);
+    } else {
+      new Notice("Chat file not found.");
+    }
+  }
+
+  async updateChatTitle(fileId: string, newTitle: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(fileId);
+    if (file instanceof TFile) {
+      try {
+        await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+          frontmatter.topic = newTitle;
+        });
+
+        // Wait for metadata cache to update
+        // This ensures that subsequent calls to extractChatTitle will get the updated data
+        await new Promise<void>((resolve) => {
+          const handler = (file: TFile) => {
+            if (file.path === fileId) {
+              this.app.metadataCache.off("changed", handler);
+              resolve();
+            }
+          };
+          this.app.metadataCache.on("changed", handler);
+
+          // Fallback timeout in case the event doesn't fire
+          setTimeout(() => {
+            this.app.metadataCache.off("changed", handler);
+            resolve();
+          }, 1000);
+        });
+
+        new Notice("Chat title updated.");
+      } catch (error) {
+        console.error("Error updating chat title:", error);
+        new Notice("Failed to update chat title.");
+      }
+    } else {
+      new Notice("Chat file not found.");
+    }
+  }
+
+  async deleteChatHistory(fileId: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(fileId);
+    if (file instanceof TFile) {
+      try {
+        await this.app.vault.delete(file);
+        new Notice("Chat deleted.");
+      } catch (error) {
+        console.error("Error deleting chat:", error);
+        new Notice("Failed to delete chat.");
+      }
+    } else {
+      new Notice("Chat file not found.");
     }
   }
 

@@ -39,6 +39,7 @@ import { err2String, isPlusChain } from "@/utils";
 import { arrayBufferToBase64 } from "@/utils/base64";
 import { Notice, TFile } from "obsidian";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { ChatHistoryItem } from "@/components/chat-components/ChatHistoryPopover";
 
 type ChatMode = "default" | "project";
 
@@ -81,6 +82,7 @@ const Chat: React.FC<ChatProps> = ({
   const [includeActiveNote, setIncludeActiveNote] = useState(false);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [showChatUI, setShowChatUI] = useState(false);
+  const [chatHistoryItems, setChatHistoryItems] = useState<ChatHistoryItem[]>([]);
   // null: keep default behavior; true: show; false: hide
   const [progressCardVisible, setProgressCardVisible] = useState<boolean | null>(null);
 
@@ -566,9 +568,53 @@ const Chat: React.FC<ChatProps> = ({
     safeSet,
   ]);
 
-  const handleLoadHistory = useCallback(() => {
-    plugin.loadCopilotChatHistory();
+  const handleLoadChatHistory = useCallback(async () => {
+    try {
+      const historyItems = await plugin.getChatHistoryItems();
+      setChatHistoryItems(historyItems);
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+      new Notice("Failed to load chat history.");
+    }
   }, [plugin]);
+
+  const handleUpdateChatTitle = useCallback(
+    async (id: string, newTitle: string) => {
+      try {
+        await plugin.updateChatTitle(id, newTitle);
+        await handleLoadChatHistory(); // Refresh the list
+      } catch (error) {
+        console.error("Error updating chat title:", error);
+        new Notice("Failed to update chat title.");
+      }
+    },
+    [plugin, handleLoadChatHistory]
+  );
+
+  const handleDeleteChat = useCallback(
+    async (id: string) => {
+      try {
+        await plugin.deleteChatHistory(id);
+        await handleLoadChatHistory(); // Refresh the list
+      } catch (error) {
+        console.error("Error deleting chat:", error);
+        new Notice("Failed to delete chat.");
+      }
+    },
+    [plugin, handleLoadChatHistory]
+  );
+
+  const handleLoadChat = useCallback(
+    async (id: string) => {
+      try {
+        await plugin.loadChatById(id);
+      } catch (error) {
+        console.error("Error loading chat:", error);
+        new Notice("Failed to load chat.");
+      }
+    },
+    [plugin]
+  );
 
   // Event listener for abort stream events
   useEffect(() => {
@@ -631,7 +677,7 @@ const Chat: React.FC<ChatProps> = ({
             <ChatControls
               onNewChat={handleNewChat}
               onSaveAsNote={() => handleSaveAsNote()}
-              onLoadHistory={handleLoadHistory}
+              onLoadHistory={handleLoadChatHistory}
               onModeChange={(newMode) => {
                 setPreviousMode(selectedChain);
                 // Hide chat UI when switching to project mode
@@ -639,6 +685,10 @@ const Chat: React.FC<ChatProps> = ({
                   setShowChatUI(false);
                 }
               }}
+              chatHistory={chatHistoryItems}
+              onUpdateChatTitle={handleUpdateChatTitle}
+              onDeleteChat={handleDeleteChat}
+              onLoadChat={handleLoadChat}
             />
             <ChatInput
               ref={inputRef}
